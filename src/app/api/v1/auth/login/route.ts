@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
     logger.error("Login endpoint error", {
       event: "LOGIN_ERROR",
       errorCode: error.code || "INTERNAL_ERROR",
+      errorMessage: error.message,
     })
 
     if (error.code === "ACCOUNT_SUSPENDED") {
