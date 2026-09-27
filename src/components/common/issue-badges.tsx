@@ -78,8 +78,17 @@ export function IssueStatusBadge({ status }: { status: string }) {
   }
 }
 
-export function IssueSeverityBadge({ severity }: { severity: string }) {
+export function IssueSeverityBadge({ severity }: { severity?: string | null }) {
+  if (!severity) return null
+
   switch (severity) {
+    case "BLOCKER":
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-purple-700 text-white shadow-xs">
+          <ShieldAlert className="h-3 w-3" />
+          Blocker
+        </span>
+      )
     case "CRITICAL":
       return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-red-600 text-white shadow-xs">
@@ -108,17 +117,27 @@ export function IssueSeverityBadge({ severity }: { severity: string }) {
           Minor
         </span>
       )
+    case "TRIVIAL":
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-border">
+          <Info className="h-3 w-3" />
+          Trivial
+        </span>
+      )
     default:
       return <Badge variant="secondary">{severity}</Badge>
   }
 }
 
-export function IssuePriorityBadge({ priority }: { priority: string }) {
+export function IssuePriorityBadge({ priority }: { priority?: string | null }) {
+  if (!priority) return null
+
   switch (priority) {
+    case "CRITICAL":
     case "URGENT":
       return (
         <span className="text-xs font-semibold text-red-600 dark:text-red-400 flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-red-500" /> Urgent
+          <span className="h-2 w-2 rounded-full bg-red-500" /> {priority === "CRITICAL" ? "Critical" : "Urgent"}
         </span>
       )
     case "HIGH":
@@ -137,6 +156,12 @@ export function IssuePriorityBadge({ priority }: { priority: string }) {
       return (
         <span className="text-xs font-medium text-slate-500 flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-slate-400" /> Low
+        </span>
+      )
+    case "LOWEST":
+      return (
+        <span className="text-xs font-medium text-slate-400 flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-slate-300" /> Lowest
         </span>
       )
     default:

@@ -326,3 +326,13 @@ export function canCreateProject(role: Role | string | undefined | null): boolea
 export function canDeleteIssue(role: Role | string | undefined | null): boolean {
   return hasPermission(role, "issue.delete")
 }
+
+export function hasProjectPermission(
+  orgRole: Role | string | undefined | null,
+  projectRole: Role | string | undefined | null,
+  permission: Permission
+): boolean {
+  if (hasPermission(orgRole, permission)) return true
+  if (projectRole && hasPermission(projectRole, permission)) return true
+  return false
+}

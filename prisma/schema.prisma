@@ -29,13 +29,17 @@ model User {
   memberships         Membership[]
   teamMemberships     TeamMember[]
   projectMembers      ProjectMember[]
+  ownedProjects       Project[]             @relation("ProjectOwner")
+  createdProjects     Project[]             @relation("ProjectCreator")
   sentInvitations     Invitation[]          @relation("InvitedBy")
   passwordResetTokens PasswordResetToken[]
 
   // Issue & Activity Relations
-  assignedIssues Issue[]   @relation("Assignee")
-  reportedIssues Issue[]   @relation("Reporter")
-  comments       Comment[]
+  assignedIssues      Issue[]               @relation("Assignee")
+  reportedIssues      Issue[]               @relation("Reporter")
+  comments            Comment[]
+  uploadedAttachments Attachment[]
+  issueActivities     IssueActivity[]
 
   // Auth.js Core Relations
   accounts       Account[]
@@ -101,6 +105,7 @@ model Organization {
   teams        Team[]
   projects     Project[]
   issues       Issue[]
+  labels       Label[]
   invitations  Invitation[]
   auditLogs    AuditLog[]
 
@@ -156,7 +161,7 @@ model Invitation {
 }
 
 // -----------------------------------------------------------------------------
-// 3. Teams & Project Workspaces
+// 3. Teams & Squads
 // -----------------------------------------------------------------------------
 
 model Team {
@@ -170,6 +175,8 @@ model Team {
   updatedAt      DateTime     @updatedAt
 
   members        TeamMember[]
+  projects       Project[]
+  issues         Issue[]
 
   @@index([organizationId])
 }
@@ -188,15 +195,34 @@ model TeamMember {
   @@index([userId])
 }
 
+// -----------------------------------------------------------------------------
+// 4. Projects & Project Memberships (Phase 2)
+// -----------------------------------------------------------------------------
+
 model Project {
   id             String          @id @default(cuid())
   organizationId String
   organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
-  key            String
+  key            String          // Unique project identifier (e.g. ACME, PAY, WEB)
   description    String?
-  category       String          @default("Web Application")
-  status         String          @default("ACTIVE") // ACTIVE, ARCHIVED
+  category       String          @default("Software Development")
+  projectType    String          @default("SOFTWARE") // SOFTWARE, SERVICE_DESK, BUSINESS
+  status         String          @default("ACTIVE") // ACTIVE, ARCHIVED, COMPLETED
+
+  ownerId        String?
+  owner          User?           @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  teamId         String?
+  team           Team?           @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  startDate      DateTime?
+  targetDate     DateTime?
+
+  createdById    String?
+  createdBy      User?           @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  issueCounter   Int             @default(0)
 
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -204,10 +230,12 @@ model Project {
   issues         Issue[]
   milestones     Milestone[]
   members        ProjectMember[]
+  labels         Label[]
 
   @@unique([organizationId, key])
   @@index([organizationId])
   @@index([organizationId, status])
+  @@index([teamId])
 }
 
 model ProjectMember {
@@ -216,12 +244,14 @@ model ProjectMember {
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      String   @default("CONTRIBUTOR") // MANAGER, CONTRIBUTOR, VIEWER
+  role      String   @default("DEVELOPER") // PROJECT_ADMIN, PROJECT_MANAGER, DEVELOPER, QA_ENGINEER, REPORTER, VIEWER
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([projectId, userId])
   @@index([userId])
+  @@index([projectId])
 }
 
 model Milestone {
@@ -240,7 +270,7 @@ model Milestone {
 }
 
 // -----------------------------------------------------------------------------
-// 4. Issues, Defects & Comments
+// 5. Issues, Bugs, Comments & Relationships (Phase 2)
 // -----------------------------------------------------------------------------
 
 model Issue {
@@ -249,21 +279,43 @@ model Issue {
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   projectId       String
   project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  teamId          String?
+  team            Team?        @relation(fields: [teamId], references: [id], onDelete: SetNull)
 
-  key             String
+  key             String       // e.g. ACME-12
+  number          Int          @default(1)
   title           String
   description     String?
-  type            String       @default("BUG") // BUG, FEATURE, TASK, IMPROVEMENT
-  status          String       @default("OPEN") // OPEN, IN_PROGRESS, IN_REVIEW, RESOLVED, CLOSED
-  priority        String       @default("MEDIUM") // URGENT, HIGH, MEDIUM, LOW
-  severity        String       @default("MODERATE") // CRITICAL, MAJOR, MODERATE, MINOR
-  module          String       @default("General")
-  reproducibility String       @default("Always")
-  environment     String       @default("Production")
+
+  type            String       @default("TASK") // EPIC, STORY, TASK, BUG, SUBTASK, FEATURE, IMPROVEMENT, SUPPORT_TICKET, CHANGE_REQUEST
+  status          String       @default("TODO") // BACKLOG, TODO, IN_PROGRESS, CODE_REVIEW, QA, DONE, REOPENED, DUPLICATE, REJECTED, WONT_FIX, CANNOT_REPRODUCE, CLOSED
+  priority        String       @default("MEDIUM") // CRITICAL, HIGH, MEDIUM, LOW, LOWEST
+  severity        String?      // BLOCKER, CRITICAL, MAJOR, MINOR, TRIVIAL (specifically for BUGs)
+
+  // Environment & Bug Fields
+  environment     String?      @default("Production")
+  module          String?      @default("General")
+  reproducibility String?      @default("Always")
+  operatingSystem String?
+  browser         String?
+  device          String?
+  appVersion      String?
+  stepsToReproduce String?
+  expectedResult  String?
+  actualResult    String?
+  logs            String?
+  stackTrace      String?
+  component       String?
+
+  // Estimates & Time
+  estimate        Float?       // Hours or points
+  timeSpent       Float?       // Hours
   dueDate         DateTime?
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  // Issue Hierarchy
+  parentIssueId   String?
+  parentIssue     Issue?       @relation("IssueHierarchy", fields: [parentIssueId], references: [id], onDelete: SetNull)
+  subIssues       Issue[]      @relation("IssueHierarchy")
 
   milestoneId     String?
   milestone       Milestone?   @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
@@ -274,13 +326,24 @@ model Issue {
   reporterId      String?
   reporter        User?        @relation("Reporter", fields: [reporterId], references: [id], onDelete: SetNull)
 
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
   comments        Comment[]
+  labels          IssueLabel[]
+  attachments     Attachment[]
+  activities      IssueActivity[]
+  sourceRelations IssueRelationship[] @relation("SourceIssue")
+  targetRelations IssueRelationship[] @relation("TargetIssue")
 
   @@unique([organizationId, key])
   @@index([organizationId, projectId])
-  @@index([organizationId, status])
+  @@index([projectId, status])
+  @@index([projectId, priority])
   @@index([assigneeId])
   @@index([reporterId])
+  @@index([parentIssueId])
+  @@index([teamId])
 }
 
 model Comment {
@@ -298,8 +361,85 @@ model Comment {
   @@index([issueId])
 }
 
+model Label {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name           String
+  color          String       @default("#3b82f6") // Hex color
+  description    String?
+  createdAt      DateTime     @default(now())
+
+  issues         IssueLabel[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([projectId])
+}
+
+model IssueLabel {
+  id        String   @id @default(cuid())
+  issueId   String
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  labelId   String
+  label     Label    @relation(fields: [labelId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([issueId, labelId])
+  @@index([issueId])
+  @@index([labelId])
+}
+
+model IssueRelationship {
+  id            String   @id @default(cuid())
+  sourceIssueId String
+  sourceIssue   Issue    @relation("SourceIssue", fields: [sourceIssueId], references: [id], onDelete: Cascade)
+  targetIssueId String
+  targetIssue   Issue    @relation("TargetIssue", fields: [targetIssueId], references: [id], onDelete: Cascade)
+  type          String   // PARENT_CHILD, BLOCKS, BLOCKED_BY, RELATES_TO, DUPLICATE, DUPLICATED_BY
+  createdAt     DateTime @default(now())
+
+  @@unique([sourceIssueId, targetIssueId, type])
+  @@index([sourceIssueId])
+  @@index([targetIssueId])
+}
+
+model IssueActivity {
+  id        String   @id @default(cuid())
+  issueId   String
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action    String   // CREATED, UPDATED, STATUS_CHANGED, PRIORITY_CHANGED, ASSIGNEE_CHANGED, COMMENT_ADDED, ATTACHMENT_ADDED, RELATIONSHIP_ADDED
+  field     String?
+  oldValue  String?
+  newValue  String?
+  metadata  String?  // JSON formatted details
+  createdAt DateTime @default(now())
+
+  @@index([issueId, createdAt])
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  issueId    String
+  issue      Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  fileName   String
+  fileSize   Int
+  mimeType   String
+  url        String
+  uploaderId String?
+  uploader   User?    @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+
+  @@index([issueId])
+}
+
 // -----------------------------------------------------------------------------
-// 5. Security & Audit Trail
+// 6. Security & Audit Trail
 // -----------------------------------------------------------------------------
 
 model AuditLog {

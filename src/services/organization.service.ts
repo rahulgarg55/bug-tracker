@@ -553,6 +553,15 @@ export class OrganizationService {
 
     return { success: true }
   }
+
+  /**
+   * Adds an existing user directly to the organization.
+   */
+  async addMember(orgId: string, callerId: string, input: { userId: string; role: any }) {
+    const user = await prisma.user.findUnique({ where: { id: input.userId } })
+    if (!user) throw new Error("User not found")
+    return this.inviteMember(orgId, callerId, { email: user.email, role: input.role })
+  }
 }
 
 export const organizationService = new OrganizationService()

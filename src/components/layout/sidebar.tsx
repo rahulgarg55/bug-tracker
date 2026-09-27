@@ -69,6 +69,13 @@ export async function Sidebar() {
               {projects.length}
             </span>
           </Link>
+          <Link
+            href="/issues"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-muted text-foreground transition-colors"
+          >
+            <Workflow className="h-4 w-4 text-muted-foreground" />
+            All Issues
+          </Link>
 
           {/* Members & Teams Modal */}
           <TeamMembersDialog

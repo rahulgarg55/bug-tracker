@@ -3,11 +3,12 @@
 import { useState } from "react"
 import { KanbanBoard } from "./kanban-board"
 import { IssueListView } from "./issue-list-view"
+import { BacklogView } from "./backlog-view"
 import { AnalyticsView } from "./analytics-view"
 import { IntegrationsView } from "./integrations-view"
 import { CreateIssueDialog } from "./create-issue-dialog"
 import { 
-  Kanban, ListOrdered, BarChart3, 
+  Kanban, ListOrdered, Layers, BarChart3, 
   Workflow, ShieldAlert, CheckCircle2 
 } from "lucide-react"
 
@@ -23,10 +24,17 @@ type ProjectWorkspaceProps = {
   issues: any[]
   users: any[]
   analytics: any
+  defaultTab?: "board" | "list" | "backlog" | "analytics" | "integrations"
 }
 
-export function ProjectWorkspace({ project, issues, users, analytics }: ProjectWorkspaceProps) {
-  const [activeTab, setActiveTab] = useState<"board" | "list" | "analytics" | "integrations">("board")
+export function ProjectWorkspace({
+  project,
+  issues,
+  users,
+  analytics,
+  defaultTab = "board",
+}: ProjectWorkspaceProps) {
+  const [activeTab, setActiveTab] = useState<"board" | "list" | "backlog" | "analytics" | "integrations">(defaultTab)
 
   return (
     <div className="flex flex-col h-full">
@@ -47,6 +55,18 @@ export function ProjectWorkspace({ project, issues, users, analytics }: ProjectW
             <span className="font-mono text-[10px] bg-muted px-1.5 py-0.2 rounded">
               {issues.length}
             </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("backlog")}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              activeTab === "backlog"
+                ? "bg-background text-primary shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Layers className="h-3.5 w-3.5" />
+            Backlog
           </button>
 
           <button
@@ -100,6 +120,9 @@ export function ProjectWorkspace({ project, issues, users, analytics }: ProjectW
       <div className="flex-1 p-8 overflow-y-auto">
         {activeTab === "board" && (
           <KanbanBoard projectId={project.id} initialIssues={issues} users={users} />
+        )}
+        {activeTab === "backlog" && (
+          <BacklogView project={project} initialIssues={issues} users={users} />
         )}
         {activeTab === "list" && (
           <IssueListView issues={issues} users={users} />
