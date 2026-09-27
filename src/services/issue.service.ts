@@ -204,6 +204,21 @@ export class IssueService {
         epicIssues: {
           select: { id: true, key: true, title: true, type: true, status: true, priority: true, storyPoints: true },
         },
+        release: {
+          select: { id: true, version: true, name: true, status: true },
+        },
+        issueSla: true,
+        timeLogs: {
+          include: {
+            user: { select: { id: true, name: true, email: true, image: true } },
+          },
+          orderBy: { loggedAt: "desc" },
+        },
+        customFieldValues: {
+          include: {
+            customField: true,
+          },
+        },
         labels: {
           include: { label: true },
         },

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { 
   FolderKanban, ShieldAlert, CheckCircle2, Activity, 
-  ArrowRight, Bug, Sparkles, MessageSquare, Layers, Clock 
+  ArrowRight, Bug, Sparkles, MessageSquare, Layers, Clock, Tag
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,7 @@ export default async function Dashboard() {
   const tenant = await getTenantContext()
   const orgId = tenant?.organizationId
 
-  const [projects, totalIssues, criticalIssues, resolvedIssues, recentIssues] = await Promise.all([
+  const [projects, totalIssues, criticalIssues, resolvedIssues, recentIssues, timeAgg, activeReleases] = await Promise.all([
     getProjects(),
     orgId ? prisma.issue.count({ where: { organizationId: orgId } }) : 0,
     orgId
@@ -46,7 +46,20 @@ export default async function Dashboard() {
           },
         })
       : [],
+    orgId
+      ? prisma.timeLog.aggregate({
+          where: { organizationId: orgId },
+          _sum: { timeSpent: true },
+        })
+      : { _sum: { timeSpent: 0 } },
+    orgId
+      ? prisma.release.count({
+          where: { organizationId: orgId, status: "UNRELEASED" },
+        })
+      : 0,
   ])
+
+  const totalHoursLogged = timeAgg._sum.timeSpent || 0
 
   const resolutionRate = totalIssues > 0 ? Math.round((resolvedIssues / totalIssues) * 100) : 0
 
@@ -74,56 +87,82 @@ export default async function Dashboard() {
       </div>
 
       {/* 4 Main KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <Card className="border-l-4 border-l-blue-500 shadow-2xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Total Workspaces
+              Workspaces
             </CardTitle>
             <FolderKanban className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-extrabold text-foreground">{projects.length}</div>
-            <p className="text-[11px] text-muted-foreground mt-1">Active enterprise trackers</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Active trackers</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-red-500 shadow-2xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Critical Blockers
+              Critical
             </CardTitle>
             <ShieldAlert className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-extrabold text-red-600">{criticalIssues}</div>
-            <p className="text-[11px] text-muted-foreground mt-1">Requiring immediate resolution</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Blockers active</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-amber-500 shadow-2xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Total Logged Defects
+              Total Defects
             </CardTitle>
             <Activity className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-extrabold text-foreground">{totalIssues}</div>
-            <p className="text-[11px] text-muted-foreground mt-1">Across all project repositories</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Across all projects</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-emerald-500 shadow-2xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Org Resolution Rate
+              Resolution
             </CardTitle>
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-extrabold text-emerald-600">{resolutionRate}%</div>
-            <p className="text-[11px] text-muted-foreground mt-1">{resolvedIssues} defects closed/resolved</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{resolvedIssues} resolved</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-indigo-500 shadow-2xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Hours Logged
+            </CardTitle>
+            <Clock className="h-4 w-4 text-indigo-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-extrabold text-indigo-600 font-mono">{totalHoursLogged.toFixed(1)}h</div>
+            <p className="text-[11px] text-muted-foreground mt-1">Total work time</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-purple-500 shadow-2xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Releases
+            </CardTitle>
+            <Tag className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-extrabold text-purple-600">{activeReleases}</div>
+            <p className="text-[11px] text-muted-foreground mt-1">Unreleased versions</p>
           </CardContent>
         </Card>
       </div>

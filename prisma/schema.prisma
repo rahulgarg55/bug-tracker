@@ -40,6 +40,7 @@ model User {
   comments            Comment[]
   uploadedAttachments Attachment[]
   issueActivities     IssueActivity[]
+  timeLogs            TimeLog[]
 
   // Auth.js Core Relations
   accounts       Account[]
@@ -101,14 +102,20 @@ model Organization {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  memberships  Membership[]
-  teams        Team[]
-  projects     Project[]
-  sprints      Sprint[]
-  issues       Issue[]
-  labels       Label[]
-  invitations  Invitation[]
-  auditLogs    AuditLog[]
+  memberships     Membership[]
+  teams           Team[]
+  projects        Project[]
+  sprints         Sprint[]
+  issues          Issue[]
+  labels          Label[]
+  invitations     Invitation[]
+  auditLogs       AuditLog[]
+  workflows       Workflow[]
+  customFields    CustomField[]
+  automationRules AutomationRule[]
+  slaPolicies     SlaPolicy[]
+  timeLogs        TimeLog[]
+  releases        Release[]
 
   @@index([slug])
 }
@@ -228,11 +235,16 @@ model Project {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
-  issues         Issue[]
-  sprints        Sprint[]
-  milestones     Milestone[]
-  members        ProjectMember[]
-  labels         Label[]
+  issues          Issue[]
+  sprints         Sprint[]
+  milestones      Milestone[]
+  members         ProjectMember[]
+  labels          Label[]
+  workflows       Workflow[]
+  customFields    CustomField[]
+  automationRules AutomationRule[]
+  slaPolicies     SlaPolicy[]
+  releases        Release[]
 
   @@unique([organizationId, key])
   @@index([organizationId])
@@ -367,6 +379,10 @@ model Issue {
   reporterId      String?
   reporter        User?        @relation("Reporter", fields: [reporterId], references: [id], onDelete: SetNull)
 
+  // Release Link
+  releaseId       String?
+  release         Release?            @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -374,6 +390,9 @@ model Issue {
   labels          IssueLabel[]
   attachments     Attachment[]
   activities      IssueActivity[]
+  timeLogs        TimeLog[]
+  customFieldValues CustomFieldValue[]
+  issueSla        IssueSla?
   sourceRelations IssueRelationship[] @relation("SourceIssue")
   targetRelations IssueRelationship[] @relation("TargetIssue")
 
@@ -386,6 +405,7 @@ model Issue {
   @@index([parentIssueId])
   @@index([epicId])
   @@index([sprintId])
+  @@index([releaseId])
   @@index([teamId])
 }
 
@@ -498,4 +518,244 @@ model AuditLog {
   createdAt      DateTime     @default(now())
 
   @@index([organizationId, createdAt])
+}
+
+// -----------------------------------------------------------------------------
+// 7. Advanced Project Management: Workflows, Custom Fields, Automation, SLA, Time, Releases (Phase 4)
+// -----------------------------------------------------------------------------
+
+model Workflow {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name           String
+  description    String?
+  isDefault      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  statuses       WorkflowStatus[]
+  transitions    WorkflowTransition[]
+
+  @@index([organizationId])
+  @@index([projectId])
+}
+
+model WorkflowStatus {
+  id          String   @id @default(cuid())
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  name        String
+  key         String   // Normalized uppercase key, e.g. "TRIAGED", "CODE_REVIEW"
+  category    String   @default("IN_PROGRESS") // TODO, IN_PROGRESS, DONE
+  color       String   @default("#3b82f6")
+  order       Int      @default(0)
+
+  fromTransitions WorkflowTransition[] @relation("FromStatus")
+  toTransitions   WorkflowTransition[] @relation("ToStatus")
+
+  @@unique([workflowId, key])
+  @@index([workflowId])
+}
+
+model WorkflowTransition {
+  id              String          @id @default(cuid())
+  workflowId      String
+  workflow        Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  name            String
+  fromStatusId    String?
+  fromStatus      WorkflowStatus? @relation("FromStatus", fields: [fromStatusId], references: [id], onDelete: Cascade)
+  toStatusId      String
+  toStatus        WorkflowStatus  @relation("ToStatus", fields: [toStatusId], references: [id], onDelete: Cascade)
+
+  requiredRole    String?         // Required RBAC role (e.g. "QA_ENGINEER", "PROJECT_ADMIN")
+  validationRules String?         // JSON array of strings e.g. ["REQUIRE_ASSIGNEE", "REQUIRE_RESOLUTION"]
+
+  createdAt       DateTime        @default(now())
+
+  @@index([workflowId])
+  @@index([fromStatusId])
+  @@index([toStatusId])
+}
+
+model CustomField {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name           String       // Display label e.g. "Customer Impact"
+  fieldKey       String       // Machine key e.g. "customer_impact"
+  type           String       // TEXT, NUMBER, DATE, DROPDOWN, MULTI_SELECT, CHECKBOX, USER, URL, EMAIL, FORMULA
+  description    String?
+  options        String?      // JSON string array for DROPDOWN/MULTI_SELECT
+  defaultValue   String?
+  isRequired     Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  values         CustomFieldValue[]
+
+  @@unique([organizationId, fieldKey])
+  @@index([organizationId])
+  @@index([projectId])
+}
+
+model CustomFieldValue {
+  id            String      @id @default(cuid())
+  issueId       String
+  issue         Issue       @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  customFieldId String
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  value         String?     // Serialized value
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([issueId, customFieldId])
+  @@index([issueId])
+  @@index([customFieldId])
+}
+
+model AutomationRule {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name           String
+  description    String?
+  triggerType    String       // issue:created, issue:status_changed, issue:priority_changed, issue:comment_added, sprint:started, sprint:completed
+  conditions     String       // JSON array of conditions e.g. [{"field":"priority","operator":"equals","value":"CRITICAL"}]
+  actions        String       // JSON array of actions e.g. [{"type":"CHANGE_STATUS","value":"IN_PROGRESS"}]
+  isActive       Boolean      @default(true)
+  executionCount Int          @default(0)
+  lastExecutedAt DateTime?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  executionLogs  AutomationExecutionLog[]
+
+  @@index([organizationId])
+  @@index([projectId])
+}
+
+model AutomationExecutionLog {
+  id           String         @id @default(cuid())
+  ruleId       String
+  rule         AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  triggerEvent String
+  issueId      String?
+  status       String         // SUCCESS, FAILED, SKIPPED
+  details      String?        // JSON summary
+  executedAt   DateTime       @default(now())
+
+  @@index([ruleId, executedAt])
+}
+
+model SlaPolicy {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name           String
+  description    String?
+  isDefault      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  targets        SlaTarget[]
+
+  @@index([organizationId])
+  @@index([projectId])
+}
+
+model SlaTarget {
+  id               String    @id @default(cuid())
+  policyId         String
+  policy           SlaPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  priority         String    // CRITICAL, HIGH, MEDIUM, LOW, LOWEST
+  responseHours    Float     // Hours to first response
+  resolutionHours  Float     // Hours to final resolution
+
+  @@unique([policyId, priority])
+  @@index([policyId])
+}
+
+model IssueSla {
+  id               String   @id @default(cuid())
+  issueId          String   @unique
+  issue            Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  policyId         String
+
+  firstResponseAt  DateTime?
+  resolvedAt       DateTime?
+  responseDueAt    DateTime
+  resolutionDueAt  DateTime
+  responseStatus   String   @default("HEALTHY") // HEALTHY, AT_RISK, BREACHED, MET
+  resolutionStatus String   @default("HEALTHY") // HEALTHY, AT_RISK, BREACHED, MET
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([policyId])
+  @@index([responseStatus])
+  @@index([resolutionStatus])
+}
+
+model TimeLog {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issueId        String
+  issue          Issue        @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  timeSpent      Float        // Hours logged (e.g. 1.5)
+  description    String?
+  billable       Boolean      @default(true)
+  loggedAt       DateTime     @default(now())
+  startedAt      DateTime?
+  endedAt        DateTime?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, issueId])
+  @@index([userId])
+  @@index([loggedAt])
+}
+
+model Release {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  version        String       // e.g. "v1.0.0"
+  name           String       // e.g. "Enterprise GA Release"
+  description    String?
+  releaseDate    DateTime?
+  status         String       @default("UNRELEASED") // UNRELEASED, RELEASED, ARCHIVED
+  releaseNotes   String?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  issues         Issue[]
+
+  @@unique([projectId, version])
+  @@index([organizationId, projectId])
+  @@index([projectId, status])
 }

@@ -22,6 +22,8 @@ import {
   Paperclip, Link2, Plus, ExternalLink, FileText, CheckCircle2,
   AlertTriangle, History, X
 } from "lucide-react"
+import { TimeLogsList } from "@/components/time-tracking/time-logs-list"
+import { SlaBadge } from "@/components/sla/sla-badge"
 
 type IssueDetailProps = {
   issue: any
@@ -902,6 +904,50 @@ export function IssueDetailView({
               <div>Created: {new Date(issue.createdAt).toLocaleString()}</div>
               <div>Updated: {new Date(issue.updatedAt).toLocaleString()}</div>
             </div>
+          </div>
+
+          {/* SLA Tracking (if active) */}
+          {issue.issueSla && (
+            <div className="bg-card border rounded-xl p-5 space-y-3 text-xs">
+              <h3 className="font-semibold text-foreground uppercase tracking-wider text-[11px]">SLA Compliance</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">First Response:</span>
+                  <SlaBadge status={issue.issueSla.responseStatus} dueAt={issue.issueSla.responseDueAt} type="response" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Resolution:</span>
+                  <SlaBadge status={issue.issueSla.resolutionStatus} dueAt={issue.issueSla.resolutionDueAt} type="resolution" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Release Version (if linked) */}
+          {issue.release && (
+            <div className="bg-card border rounded-xl p-5 space-y-2 text-xs">
+              <h3 className="font-semibold text-foreground uppercase tracking-wider text-[11px]">Target Release</h3>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-indigo-500" />
+                  <span className="font-mono font-bold text-foreground">{issue.release.version}</span>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="text-foreground">{issue.release.name}</span>
+                </div>
+                <Badge variant="outline" className="text-[10px]">
+                  {issue.release.status}
+                </Badge>
+              </div>
+            </div>
+          )}
+
+          {/* Work Time Tracking */}
+          <div className="bg-card border rounded-xl p-5">
+            <TimeLogsList
+              issueId={issue.id}
+              issueKey={issue.key}
+              totalTimeSpent={issue.timeSpent}
+            />
           </div>
         </div>
       </div>

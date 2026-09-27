@@ -19,6 +19,7 @@ export type TenantContext = {
     plan: string
   }
   role: string // OWNER, ADMIN, MEMBER, GUEST
+  userRole: string
 }
 
 export async function getCurrentUserWithOrgs() {
@@ -84,6 +85,7 @@ export async function getTenantContext(): Promise<TenantContext | null> {
       plan: currentMembership.organization.plan,
     },
     role: currentMembership.role,
+    userRole: currentMembership.role,
   }
 }
 

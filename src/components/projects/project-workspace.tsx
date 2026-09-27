@@ -10,7 +10,7 @@ import { IntegrationsView } from "./integrations-view"
 import { CreateIssueDialog } from "./create-issue-dialog"
 import { 
   Kanban, ListOrdered, Layers, BarChart3, 
-  Workflow, ShieldAlert, CheckCircle2, Timer, Calendar
+  Workflow, ShieldAlert, CheckCircle2, Timer, Calendar, Tag
 } from "lucide-react"
 
 type ProjectWorkspaceProps = {
@@ -104,6 +104,14 @@ export function ProjectWorkspace({
           >
             <BarChart3 className="h-3.5 w-3.5" />
             Velocity & Reports
+          </Link>
+
+          <Link
+            href={`/projects/${project.id}/releases`}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
+          >
+            <Tag className="h-3.5 w-3.5" />
+            Releases
           </Link>
 
           <button
