@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "./users"
+import { getTenantContext, requireTenantContext } from "@/lib/tenant"
+import { hasPermission } from "@/lib/rbac"
 
 export type IssueFilters = {
   status?: string
@@ -15,7 +17,12 @@ export type IssueFilters = {
 }
 
 export async function getIssues(projectId?: string, filters?: IssueFilters) {
-  const whereClause: any = {}
+  const tenant = await getTenantContext()
+  if (!tenant) return []
+
+  const whereClause: any = {
+    organizationId: tenant.organizationId,
+  }
 
   if (projectId) {
     whereClause.projectId = projectId
@@ -68,8 +75,14 @@ export async function getIssues(projectId?: string, filters?: IssueFilters) {
 }
 
 export async function getIssueById(id: string) {
-  return prisma.issue.findUnique({
-    where: { id },
+  const tenant = await getTenantContext()
+  if (!tenant) return null
+
+  return prisma.issue.findFirst({
+    where: {
+      id,
+      organizationId: tenant.organizationId,
+    },
     include: {
       assignee: true,
       reporter: true,
@@ -100,9 +113,18 @@ export async function createIssue(data: {
   milestoneId?: string
   dueDate?: string | null
 }) {
-  // Find project to get its key prefix
-  const project = await prisma.project.findUnique({
-    where: { id: data.projectId },
+  const tenant = await requireTenantContext()
+
+  if (!hasPermission(tenant.role, "issues:create")) {
+    throw new Error("Forbidden: You do not have permission to create issues")
+  }
+
+  // Find project within this organization to get its key prefix
+  const project = await prisma.project.findFirst({
+    where: {
+      id: data.projectId,
+      organizationId: tenant.organizationId,
+    },
     include: {
       _count: {
         select: { issues: true },
@@ -110,16 +132,16 @@ export async function createIssue(data: {
     },
   })
 
-  if (!project) throw new Error("Project not found")
+  if (!project) throw new Error("Project not found in this workspace")
 
   // Generate next issue key (e.g., CLOUD-106)
   const count = project._count.issues + 101
   const key = `${project.key}-${count}`
 
-  const currentUser = await getCurrentUser()
-
   const issue = await prisma.issue.create({
     data: {
+      organizationId: tenant.organizationId,
+      projectId: data.projectId,
       key,
       title: data.title,
       description: data.description,
@@ -131,9 +153,8 @@ export async function createIssue(data: {
       environment: data.environment || "Production",
       reproducibility: data.reproducibility || "Always",
       dueDate: data.dueDate ? new Date(data.dueDate) : null,
-      projectId: data.projectId,
       assigneeId: data.assigneeId || null,
-      reporterId: currentUser?.id || null,
+      reporterId: tenant.userId,
       milestoneId: data.milestoneId || null,
     },
   })
@@ -160,6 +181,18 @@ export async function updateIssue(
     dueDate?: string | null
   }
 ) {
+  const tenant = await requireTenantContext()
+
+  if (!hasPermission(tenant.role, "issues:edit")) {
+    throw new Error("Forbidden: You do not have permission to edit issues")
+  }
+
+  const existing = await prisma.issue.findFirst({
+    where: { id, organizationId: tenant.organizationId },
+  })
+
+  if (!existing) throw new Error("Issue not found in this workspace")
+
   const updateData: any = { ...data }
   if (data.dueDate !== undefined) {
     updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null
@@ -177,6 +210,18 @@ export async function updateIssue(
 }
 
 export async function updateIssueStatus(id: string, status: string) {
+  const tenant = await requireTenantContext()
+
+  if (!hasPermission(tenant.role, "issues:edit")) {
+    throw new Error("Forbidden: You do not have permission to update issue status")
+  }
+
+  const existing = await prisma.issue.findFirst({
+    where: { id, organizationId: tenant.organizationId },
+  })
+
+  if (!existing) throw new Error("Issue not found in this workspace")
+
   const issue = await prisma.issue.update({
     where: { id },
     data: { status },
@@ -189,6 +234,18 @@ export async function updateIssueStatus(id: string, status: string) {
 }
 
 export async function deleteIssue(id: string) {
+  const tenant = await requireTenantContext()
+
+  if (!hasPermission(tenant.role, "issues:delete")) {
+    throw new Error("Forbidden: You do not have permission to delete issues")
+  }
+
+  const existing = await prisma.issue.findFirst({
+    where: { id, organizationId: tenant.organizationId },
+  })
+
+  if (!existing) throw new Error("Issue not found in this workspace")
+
   const issue = await prisma.issue.delete({
     where: { id },
   })
@@ -200,30 +257,28 @@ export async function deleteIssue(id: string) {
 }
 
 export async function addComment(issueId: string, content: string) {
+  const tenant = await requireTenantContext()
+
   if (!content.trim()) throw new Error("Comment content cannot be empty")
-  
-  const currentUser = await getCurrentUser()
-  if (!currentUser) throw new Error("User required to post comment")
+
+  const issue = await prisma.issue.findFirst({
+    where: { id: issueId, organizationId: tenant.organizationId },
+    select: { projectId: true },
+  })
+
+  if (!issue) throw new Error("Issue not found in this workspace")
 
   const comment = await prisma.comment.create({
     data: {
       content: content.trim(),
       issueId,
-      authorId: currentUser.id,
+      authorId: tenant.userId,
     },
     include: {
       author: true,
     },
   })
 
-  const issue = await prisma.issue.findUnique({
-    where: { id: issueId },
-    select: { projectId: true },
-  })
-
-  if (issue) {
-    revalidatePath(`/projects/${issue.projectId}`)
-  }
-
+  revalidatePath(`/projects/${issue.projectId}`)
   return comment
 }

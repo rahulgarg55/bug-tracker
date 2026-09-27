@@ -1,36 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Enterprise BugTracker & Engineering Management SaaS (Phase 1)
 
-## Getting Started
+A production-grade, multi-tenant engineering management and defect-tracking SaaS built with Next.js 16 (App Router), React 19, Auth.js (NextAuth v5), Prisma ORM, Tailwind CSS, and Redis.
 
-First, run the development server:
+Inspired by Jira, Linear, and Zoho BugTracker.
 
+---
+
+## Architecture & Features (Phase 1 Foundation)
+
+* **Multi-Tenancy & Tenant Isolation:** Complete organizational boundary enforcement. Every resource (memberships, squads, teams, settings) belongs to an organization with strict backend isolation checks.
+* **Production Authentication:**
+  * User Registration with automated organization provisioning
+  * Credential authentication with bcrypt (10 salt rounds)
+  * Signed `HttpOnly` JWT session management with `SameSite=Lax` and production `Secure` flags
+  * Password reset tokens with account enumeration defense
+  * Email verification token management
+  * Session refresh and credential rotation
+  * Rate-limiting across all authentication endpoints
+* **Role-Based Access Control (RBAC):**
+  * Granular hierarchy: `ORGANIZATION_OWNER`, `ORGANIZATION_ADMIN`, `PROJECT_ADMIN`, `PROJECT_MANAGER`, `DEVELOPER`, `QA_ENGINEER`, `PRODUCT_MANAGER`, `REPORTER`, `VIEWER`, `GUEST`
+  * Permission guards at service and API layers
+  * Protected sole owner guarantees (`LAST_OWNER_PROTECTION`)
+* **Organizations & Squads (Teams):**
+  * Multi-organization switching and active context cookies
+  * Organization settings and profile management
+  * Squad/team creation, updating, member assignment, and deletion
+* **Resilient Infrastructure:**
+  * Redis sliding window rate limiter with zero-downtime in-memory fallback
+  * Centralized audit logging for organizational mutations
+  * OpenAPI 3.0 specification available at `/api/v1/docs`
+
+---
+
+## Quick Start
+
+### 1. Prerequisites
+* Node.js >= 20.x
+* npm >= 9.x
+* (Optional) Docker for local PostgreSQL and Redis
+
+### 2. Installation
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repo-url>
+cd bug-tracker
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Environment Configuration
+```bash
+cp .env.example .env
+```
+Ensure `AUTH_SECRET` is generated:
+```bash
+openssl rand -hex 32
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Database Setup & Seeding
+```bash
+npx prisma db push
+npx tsx prisma/seed.ts
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 5. Running the Application
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Test Suite & Verification
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Run the full automated test suite (75 tests across 10 suites):
+```bash
+npm test
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Run linter:
+```bash
+npm run lint
+```
 
-## Deploy on Vercel
+Run TypeScript compiler check:
+```bash
+npx tsc --noEmit
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Build for production:
+```bash
+npm run build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Documentation Links
+
+* [ARCHITECTURE.md](ARCHITECTURE.md) — System architecture, layering, and multi-tenant design
+* [DATABASE.md](DATABASE.md) — Relational schema models, indexes, and relations
+* [ENVIRONMENT.md](ENVIRONMENT.md) — Complete environment variables and infrastructure setup
+* [SECURITY.md](SECURITY.md) — Tenant isolation, password hashing, and security policies
+* [TESTING.md](TESTING.md) — Test architecture and verification commands
+* [PROJECT_STATUS.md](PROJECT_STATUS.md) — Phase 1 verification report and completion checklist

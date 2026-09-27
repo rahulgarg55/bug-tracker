@@ -1,9 +1,35 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import { getTenantContext } from "@/lib/tenant"
 
 export async function getProjectAnalytics(projectId?: string) {
-  const whereClause = projectId ? { projectId } : {}
+  const tenant = await getTenantContext()
+  if (!tenant) {
+    return {
+      total: 0,
+      open: 0,
+      inProgress: 0,
+      inReview: 0,
+      resolved: 0,
+      closed: 0,
+      activeDefects: 0,
+      resolvedDefects: 0,
+      resolutionRate: 0,
+      severity: { critical: 0, major: 0, moderate: 0, minor: 0 },
+      priority: { urgent: 0, high: 0, medium: 0, low: 0 },
+      moduleBreakdown: [],
+      assigneeWorkload: [],
+    }
+  }
+
+  const whereClause: any = {
+    organizationId: tenant.organizationId,
+  }
+
+  if (projectId) {
+    whereClause.projectId = projectId
+  }
 
   const issues = await prisma.issue.findMany({
     where: whereClause,

@@ -13,23 +13,39 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { formatDistanceToNow } from "date-fns"
 
+import { getTenantContext } from "@/lib/tenant"
+
 export default async function Dashboard() {
+  const tenant = await getTenantContext()
+  const orgId = tenant?.organizationId
+
   const [projects, totalIssues, criticalIssues, resolvedIssues, recentIssues] = await Promise.all([
     getProjects(),
-    prisma.issue.count(),
-    prisma.issue.count({ where: { severity: "CRITICAL", status: { not: "CLOSED" } } }),
-    prisma.issue.count({ where: { status: { in: ["RESOLVED", "CLOSED"] } } }),
-    prisma.issue.findMany({
-      take: 6,
-      orderBy: { createdAt: "desc" },
-      include: {
-        project: true,
-        assignee: true,
-        comments: {
-          select: { id: true },
-        },
-      },
-    }),
+    orgId ? prisma.issue.count({ where: { organizationId: orgId } }) : 0,
+    orgId
+      ? prisma.issue.count({
+          where: { organizationId: orgId, severity: "CRITICAL", status: { not: "CLOSED" } },
+        })
+      : 0,
+    orgId
+      ? prisma.issue.count({
+          where: { organizationId: orgId, status: { in: ["RESOLVED", "CLOSED"] } },
+        })
+      : 0,
+    orgId
+      ? prisma.issue.findMany({
+          where: { organizationId: orgId },
+          take: 6,
+          orderBy: { createdAt: "desc" },
+          include: {
+            project: true,
+            assignee: true,
+            comments: {
+              select: { id: true },
+            },
+          },
+        })
+      : [],
   ])
 
   const resolutionRate = totalIssues > 0 ? Math.round((resolvedIssues / totalIssues) * 100) : 0
@@ -174,6 +190,15 @@ export default async function Dashboard() {
                 </Card>
               )
             })}
+            {projects.length === 0 && (
+              <div className="col-span-full py-12 text-center border border-dashed border-border rounded-xl bg-card/50">
+                <FolderKanban className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
+                <h3 className="text-sm font-semibold text-foreground">No projects yet</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Create your first workspace project to start logging defects and tracking sprints.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -214,6 +239,12 @@ export default async function Dashboard() {
                   </div>
                 </Link>
               ))}
+
+              {recentIssues.length === 0 && (
+                <div className="py-8 text-center text-xs text-muted-foreground italic">
+                  No defects logged in this organization yet.
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
