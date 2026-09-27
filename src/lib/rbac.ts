@@ -328,11 +328,19 @@ export function canDeleteIssue(role: Role | string | undefined | null): boolean 
 }
 
 export function hasProjectPermission(
-  orgRole: Role | string | undefined | null,
-  projectRole: Role | string | undefined | null,
-  permission: Permission
+  orgOrProjectRole: Role | string | undefined | null,
+  projectRoleOrPermission: Role | string | undefined | null,
+  permissionArg?: Permission
 ): boolean {
-  if (hasPermission(orgRole, permission)) return true
-  if (projectRole && hasPermission(projectRole, permission)) return true
-  return false
+  if (permissionArg) {
+    const orgRole = orgOrProjectRole
+    const projectRole = projectRoleOrPermission
+    if (hasPermission(orgRole, permissionArg)) return true
+    if (projectRole && hasPermission(projectRole, permissionArg)) return true
+    return false
+  } else {
+    const role = orgOrProjectRole
+    const perm = projectRoleOrPermission as Permission
+    return hasPermission(role, perm)
+  }
 }

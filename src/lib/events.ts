@@ -10,6 +10,10 @@ export type AppEvent =
   | "issue:board_moved"
   | "project:created"
   | "project:updated"
+  | "sprint:created"
+  | "sprint:started"
+  | "sprint:completed"
+  | "sprint:updated"
 
 export interface EventPayload {
   organizationId: string

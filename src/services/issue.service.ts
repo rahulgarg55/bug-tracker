@@ -104,10 +104,15 @@ export class IssueService {
           stackTrace: input.stackTrace,
           component: input.component,
           estimate: input.estimate,
+          storyPoints: input.storyPoints !== undefined ? input.storyPoints : null,
+          startDate: input.startDate ? new Date(input.startDate) : null,
+          targetDate: input.targetDate ? new Date(input.targetDate) : null,
           dueDate: input.dueDate ? new Date(input.dueDate) : null,
-          parentIssueId: input.parentIssueId,
-          milestoneId: input.milestoneId,
-          assigneeId: input.assigneeId,
+          parentIssueId: input.parentIssueId || null,
+          milestoneId: input.milestoneId || null,
+          assigneeId: input.assigneeId || null,
+          sprintId: input.sprintId || null,
+          epicId: input.epicId || null,
           reporterId: userId,
         },
       })
@@ -188,7 +193,16 @@ export class IssueService {
           select: { id: true, key: true, title: true, type: true, status: true },
         },
         subIssues: {
-          select: { id: true, key: true, title: true, type: true, status: true, priority: true },
+          select: { id: true, key: true, title: true, type: true, status: true, priority: true, storyPoints: true },
+        },
+        sprint: {
+          select: { id: true, name: true, status: true, startDate: true, endDate: true },
+        },
+        epic: {
+          select: { id: true, key: true, title: true, status: true },
+        },
+        epicIssues: {
+          select: { id: true, key: true, title: true, type: true, status: true, priority: true, storyPoints: true },
         },
         labels: {
           include: { label: true },
@@ -276,6 +290,16 @@ export class IssueService {
     if (filters?.type) where.type = filters.type
     if (filters?.assigneeId) where.assigneeId = filters.assigneeId
     if (filters?.reporterId) where.reporterId = filters.reporterId
+    if (filters?.sprintId !== undefined) {
+      if (filters.sprintId === "none" || filters.sprintId === null) {
+        where.sprintId = null
+      } else {
+        where.sprintId = filters.sprintId
+      }
+    }
+    if (filters?.epicId !== undefined) {
+      where.epicId = filters.epicId
+    }
 
     if (filters?.label) {
       where.labels = {
@@ -330,6 +354,8 @@ export class IssueService {
           project: { select: { id: true, name: true, key: true } },
           assignee: { select: { id: true, name: true, avatar: true } },
           reporter: { select: { id: true, name: true, avatar: true } },
+          sprint: { select: { id: true, name: true, status: true } },
+          epic: { select: { id: true, key: true, title: true } },
           labels: { include: { label: true } },
           _count: { select: { comments: true, attachments: true } },
         },
@@ -391,9 +417,14 @@ export class IssueService {
           ...(input.status ? { status: input.status } : {}),
           ...(input.priority ? { priority: input.priority } : {}),
           ...(input.severity !== undefined ? { severity: input.severity } : {}),
-          ...(input.teamId !== undefined ? { teamId: input.teamId } : {}),
-          ...(input.assigneeId !== undefined ? { assigneeId: input.assigneeId } : {}),
-          ...(input.parentIssueId !== undefined ? { parentIssueId: input.parentIssueId } : {}),
+          ...(input.teamId !== undefined ? { teamId: input.teamId || null } : {}),
+          ...(input.assigneeId !== undefined ? { assigneeId: input.assigneeId || null } : {}),
+          ...(input.parentIssueId !== undefined ? { parentIssueId: input.parentIssueId || null } : {}),
+          ...(input.sprintId !== undefined ? { sprintId: input.sprintId || null } : {}),
+          ...(input.epicId !== undefined ? { epicId: input.epicId || null } : {}),
+          ...(input.storyPoints !== undefined ? { storyPoints: input.storyPoints } : {}),
+          ...(input.startDate !== undefined ? { startDate: input.startDate ? new Date(input.startDate) : null } : {}),
+          ...(input.targetDate !== undefined ? { targetDate: input.targetDate ? new Date(input.targetDate) : null } : {}),
           ...(input.estimate !== undefined ? { estimate: input.estimate } : {}),
           ...(input.timeSpent !== undefined ? { timeSpent: input.timeSpent } : {}),
           ...(input.dueDate !== undefined ? { dueDate: input.dueDate ? new Date(input.dueDate) : null } : {}),

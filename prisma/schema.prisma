@@ -104,6 +104,7 @@ model Organization {
   memberships  Membership[]
   teams        Team[]
   projects     Project[]
+  sprints      Sprint[]
   issues       Issue[]
   labels       Label[]
   invitations  Invitation[]
@@ -228,6 +229,7 @@ model Project {
   updatedAt      DateTime        @updatedAt
 
   issues         Issue[]
+  sprints        Sprint[]
   milestones     Milestone[]
   members        ProjectMember[]
   labels         Label[]
@@ -269,6 +271,33 @@ model Milestone {
   @@index([projectId])
 }
 
+model Sprint {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId       String
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name            String
+  goal            String?
+  status          String       @default("PLANNING") // PLANNING, ACTIVE, COMPLETED, CANCELLED
+
+  startDate       DateTime?
+  endDate         DateTime?
+  completedAt     DateTime?
+
+  totalPoints     Float        @default(0)
+  completedPoints Float        @default(0)
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  issues          Issue[]
+
+  @@index([organizationId, projectId])
+  @@index([projectId, status])
+}
+
 // -----------------------------------------------------------------------------
 // 5. Issues, Bugs, Comments & Relationships (Phase 2)
 // -----------------------------------------------------------------------------
@@ -308,14 +337,26 @@ model Issue {
   component       String?
 
   // Estimates & Time
-  estimate        Float?       // Hours or points
+  estimate        Float?       // Hours
   timeSpent       Float?       // Hours
+  storyPoints     Float?       // Agile story points (1, 2, 3, 5, 8, 13, 21...)
+  startDate       DateTime?    // Roadmap start date
+  targetDate      DateTime?    // Roadmap target date
   dueDate         DateTime?
 
   // Issue Hierarchy
   parentIssueId   String?
   parentIssue     Issue?       @relation("IssueHierarchy", fields: [parentIssueId], references: [id], onDelete: SetNull)
   subIssues       Issue[]      @relation("IssueHierarchy")
+
+  // Epic Link
+  epicId          String?
+  epic            Issue?       @relation("EpicIssues", fields: [epicId], references: [id], onDelete: SetNull)
+  epicIssues      Issue[]      @relation("EpicIssues")
+
+  // Sprint Link
+  sprintId        String?
+  sprint          Sprint?      @relation(fields: [sprintId], references: [id], onDelete: SetNull)
 
   milestoneId     String?
   milestone       Milestone?   @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
@@ -343,6 +384,8 @@ model Issue {
   @@index([assigneeId])
   @@index([reporterId])
   @@index([parentIssueId])
+  @@index([epicId])
+  @@index([sprintId])
   @@index([teamId])
 }
 

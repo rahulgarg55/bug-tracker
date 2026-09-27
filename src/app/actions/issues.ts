@@ -243,6 +243,11 @@ export async function updateIssue(
     appVersion?: string | null
     logs?: string | null
     stackTrace?: string | null
+    storyPoints?: number | null
+    sprintId?: string | null
+    epicId?: string | null
+    startDate?: string | null
+    targetDate?: string | null
   }
 ) {
   const tenant = await requireTenantContext()
@@ -264,6 +269,11 @@ export async function updateIssue(
     priority: data.priority as any,
     severity: data.severity as any,
     assigneeId: data.assigneeId ?? undefined,
+    storyPoints: data.storyPoints ?? undefined,
+    sprintId: data.sprintId ?? undefined,
+    epicId: data.epicId ?? undefined,
+    startDate: data.startDate ? new Date(data.startDate) : undefined,
+    targetDate: data.targetDate ? new Date(data.targetDate) : undefined,
     dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
     stepsToReproduce: data.stepsToReproduce ?? undefined,
     expectedResult: data.expectedResult ?? undefined,

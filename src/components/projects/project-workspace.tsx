@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { KanbanBoard } from "./kanban-board"
 import { IssueListView } from "./issue-list-view"
 import { BacklogView } from "./backlog-view"
@@ -9,7 +10,7 @@ import { IntegrationsView } from "./integrations-view"
 import { CreateIssueDialog } from "./create-issue-dialog"
 import { 
   Kanban, ListOrdered, Layers, BarChart3, 
-  Workflow, ShieldAlert, CheckCircle2 
+  Workflow, ShieldAlert, CheckCircle2, Timer, Calendar
 } from "lucide-react"
 
 type ProjectWorkspaceProps = {
@@ -69,6 +70,22 @@ export function ProjectWorkspace({
             Backlog
           </button>
 
+          <Link
+            href={`/projects/${project.id}/sprints`}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
+          >
+            <Timer className="h-3.5 w-3.5" />
+            Scrum Sprints
+          </Link>
+
+          <Link
+            href={`/projects/${project.id}/roadmap`}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
+          >
+            <Calendar className="h-3.5 w-3.5" />
+            Roadmap
+          </Link>
+
           <button
             onClick={() => setActiveTab("list")}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
@@ -81,17 +98,13 @@ export function ProjectWorkspace({
             Issue Navigator
           </button>
 
-          <button
-            onClick={() => setActiveTab("analytics")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-              activeTab === "analytics"
-                ? "bg-background text-primary shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+          <Link
+            href={`/projects/${project.id}/reports`}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
           >
             <BarChart3 className="h-3.5 w-3.5" />
-            Reports & Velocity
-          </button>
+            Velocity & Reports
+          </Link>
 
           <button
             onClick={() => setActiveTab("integrations")}
