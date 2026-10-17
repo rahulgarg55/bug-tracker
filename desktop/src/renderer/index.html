@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BugTracker Desktop Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(255, 255, 255, 0.12);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --info: #3b82f6;
+      --font-heading: 'Space Grotesk', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --card-border: rgba(0, 0, 0, 0.08);
+      --card-hover: rgba(0, 0, 0, 0.12);
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --accent: #4f46e5;
+      --accent-glow: rgba(79, 70, 229, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top App Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(10, 15, 29, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-app-region: drag;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      -webkit-app-region: no-drag;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #ef4444, #8b5cf6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    .brand-title {
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-sub {
+      font-size: 10px;
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      -webkit-app-region: no-drag;
+    }
+
+    .hotkey-pill {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .sync-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    .btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      border: none;
+      outline: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    /* Main Container */
+    .app-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Left Section: Defect List & Metrics */
+    .main-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 16px 20px;
+      gap: 16px;
+    }
+
+    /* Metrics Strip */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .metric-value {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 700;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .metric-trend {
+      font-size: 11px;
+      color: var(--success);
+      font-family: var(--font-body);
+      font-weight: 500;
+    }
+
+    /* Controls Bar */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .search-input {
+      flex: 1;
+      max-width: 340px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+      font-family: var(--font-body);
+      user-select: text;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 6px;
+    }
+
+    .filter-pill {
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-pill.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Issues Feed */
+    .issues-feed {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+
+    .issue-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.15s, border-color 0.15s;
+      cursor: pointer;
+    }
+
+    .issue-card:hover {
+      border-color: var(--card-hover);
+      transform: translateY(-1px);
+    }
+
+    .issue-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .issue-key-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .issue-key {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-glow);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .severity-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .severity-critical { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .severity-high { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .severity-medium { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .severity-low { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    .status-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      font-weight: 600;
+    }
+
+    .issue-title {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.4;
+      user-select: text;
+    }
+
+    .issue-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 8px;
+    }
+
+    .component-tag {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+    }
+
+    /* Right Sidebar: Quick Logger & Profile */
+    .side-pane {
+      width: 340px;
+      border-left: 1px solid var(--card-border);
+      background: rgba(13, 19, 33, 0.5);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .panel-title {
+      font-family: var(--font-heading);
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: var(--text);
+      font-size: 12px;
+      font-family: var(--font-body);
+      outline: none;
+      user-select: text;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .profile-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      font-size: 14px;
+    }
+
+    .profile-details {
+      display: flex;
+      flex-direction: column;
+      font-size: 11px;
+      overflow: hidden;
+    }
+
+    .profile-name {
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .profile-email {
+      color: var(--text-muted);
+      font-size: 10px;
+    }
+
+    .profile-org {
+      color: var(--accent);
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- App Header -->
+  <header>
+    <div class="brand-group">
+      <div class="brand-icon">🐛</div>
+      <div class="brand-title">
+        BugTracker
+        <span class="badge-sub">Desktop HUD</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="hotkey-pill">Global Hotkey: Ctrl+Shift+B</div>
+      <div class="sync-status">
+        <span class="status-dot" id="syncDot"></span>
+        <span id="syncText">Checking Cloud...</span>
+      </div>
+      <button class="btn btn-secondary" id="syncBtn" onclick="syncIssues()">Sync Queue</button>
+      <button class="btn btn-secondary" onclick="toggleTheme()" id="themeBtn">☀️ / 🌙</button>
+    </div>
+  </header>
+
+  <!-- Main Work Area -->
+  <div class="app-body">
+    <!-- Left Defect Stream -->
+    <div class="main-pane">
+      <!-- Metrics Strip -->
+      <div class="metrics-row">
+        <div class="metric-card">
+          <span class="metric-label">Open Defects</span>
+          <span class="metric-value" id="openCount">4 <span class="metric-trend">Active Sprint</span></span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Critical Blockers</span>
+          <span class="metric-value" style="color: var(--danger)" id="criticalCount">1 <span class="metric-trend" style="color: var(--danger)">Immediate</span></span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">In Review / QA</span>
+          <span class="metric-value" style="color: var(--warning)" id="reviewCount">1 <span class="metric-trend">Sprint 24</span></span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Sprint Burndown</span>
+          <span class="metric-value" style="color: var(--success)">88% <span class="metric-trend">On Track</span></span>
+        </div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="controls-row">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search defects by key, title, or component..." oninput="filterIssues()">
+        <div class="filter-pills">
+          <button class="filter-pill active" onclick="setFilter('ALL', this)">All</button>
+          <button class="filter-pill" onclick="setFilter('CRITICAL', this)">Critical</button>
+          <button class="filter-pill" onclick="setFilter('IN_PROGRESS', this)">In Progress</button>
+          <button class="filter-pill" onclick="setFilter('DONE', this)">Resolved</button>
+        </div>
+      </div>
+
+      <!-- Feed -->
+      <div class="issues-feed" id="issuesList">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Right Quick Defect Logger -->
+    <div class="side-pane">
+      <div class="panel-title">
+        <span>⚡ Quick Defect Logger</span>
+      </div>
+
+      <form id="defectForm" onsubmit="handleCreateIssue(event)">
+        <div class="form-group">
+          <label class="form-label">Defect Title</label>
+          <input type="text" id="issueTitle" class="form-input" placeholder="e.g. WebSocket connection drops upon reload" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+          <div class="form-group">
+            <label class="form-label">Severity</label>
+            <select id="issueSeverity" class="form-select">
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM" selected>Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="issueType" class="form-select">
+              <option value="BUG" selected>Bug</option>
+              <option value="SECURITY">Security</option>
+              <option value="TASK">Task</option>
+              <option value="FEATURE">Feature</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 8px;">
+          <label class="form-label">Subsystem / Component</label>
+          <input type="text" id="issueComponent" class="form-input" placeholder="e.g. Auth Gateway, Live Engine, UI" value="Frontend Core">
+        </div>
+
+        <div class="form-group" style="margin-top: 8px;">
+          <label class="form-label">Reproduction Steps & Telemetry</label>
+          <textarea id="issueDesc" class="form-textarea" placeholder="Steps to reproduce, stack trace, or expected vs actual outcome..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 14px; justify-content: center;">
+          Submit Defect (Ctrl+Shift+B)
+        </button>
+      </form>
+
+      <!-- Profile Footer -->
+      <div class="profile-card">
+        <div class="avatar">RG</div>
+        <div class="profile-details">
+          <span class="profile-name" id="userName">Rahul Garg</span>
+          <span class="profile-email" id="userEmail">rahul@northstardigital.com</span>
+          <span class="profile-org">Northstar Digital • Lead Architect</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allIssues = [];
+    let currentFilter = 'ALL';
+    let isDarkMode = true;
+
+    async function initApp() {
+      if (window.bugTrackerAPI) {
+        const status = await window.bugTrackerAPI.getAppStatus();
+        updateStatusDisplay(status);
+
+        loadIssues();
+
+        window.bugTrackerAPI.onShowQuickLogger(() => {
+          document.getElementById('issueTitle').focus();
+        });
+
+        window.bugTrackerAPI.onStatusUpdated((data) => {
+          if (data.issues) {
+            allIssues = data.issues;
+            renderIssues();
+          }
+          alert(data.message);
+        });
+      }
+    }
+
+    function updateStatusDisplay(status) {
+      const syncDot = document.getElementById('syncDot');
+      const syncText = document.getElementById('syncText');
+      if (status.online) {
+        syncDot.style.background = 'var(--success)';
+        syncDot.style.boxShadow = '0 0 8px var(--success)';
+        syncText.innerText = 'Connected (Cloud Synced)';
+      } else {
+        syncDot.style.background = 'var(--warning)';
+        syncDot.style.boxShadow = '0 0 8px var(--warning)';
+        syncText.innerText = `Offline Cache (${status.queueCount} Queued)`;
+      }
+
+      if (status.user) {
+        document.getElementById('userName').innerText = status.user.name;
+        document.getElementById('userEmail').innerText = status.user.email;
+      }
+    }
+
+    async function loadIssues() {
+      if (window.bugTrackerAPI) {
+        allIssues = await window.bugTrackerAPI.getIssues();
+        renderIssues();
+      }
+    }
+
+    function renderIssues() {
+      const container = document.getElementById('issuesList');
+      const query = document.getElementById('searchInput').value.toLowerCase();
+
+      let filtered = allIssues.filter(i => {
+        const matchesQuery = i.title.toLowerCase().includes(query) ||
+                             i.key.toLowerCase().includes(query) ||
+                             i.component.toLowerCase().includes(query);
+        if (!matchesQuery) return false;
+        if (currentFilter === 'ALL') return true;
+        if (currentFilter === 'CRITICAL') return i.severity === 'CRITICAL';
+        if (currentFilter === 'IN_PROGRESS') return i.status === 'IN_PROGRESS';
+        if (currentFilter === 'DONE') return i.status === 'DONE';
+        return true;
+      });
+
+      // Update counters
+      document.getElementById('openCount').innerText = allIssues.filter(i => i.status !== 'DONE').length;
+      document.getElementById('criticalCount').innerText = allIssues.filter(i => i.severity === 'CRITICAL' && i.status !== 'DONE').length;
+      document.getElementById('reviewCount').innerText = allIssues.filter(i => i.status === 'IN_REVIEW').length;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 13px;">
+            No defects found matching current criteria.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(issue => `
+        <div class="issue-card" onclick="advanceIssueStatus('${issue.id}', '${issue.status}')">
+          <div class="issue-header">
+            <div class="issue-key-group">
+              <span class="issue-key">${issue.key}</span>
+              <span class="severity-badge severity-${issue.severity.toLowerCase()}">${issue.severity}</span>
+              <span class="component-tag">${issue.component}</span>
+            </div>
+            <span class="status-badge">${formatStatus(issue.status)}</span>
+          </div>
+          <div class="issue-title">${escapeHtml(issue.title)}</div>
+          <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">${escapeHtml(issue.description)}</div>
+          <div class="issue-footer">
+            <span>Assignee: <strong style="color: var(--text)">${issue.assignee}</strong></span>
+            <span>${issue.synced ? '✓ Cloud Synced' : '⏳ Queued Offline'}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function formatStatus(status) {
+      switch(status) {
+        case 'IN_PROGRESS': return '⚙️ In Progress';
+        case 'IN_REVIEW': return '🔍 Code Review';
+        case 'DONE': return '✅ Resolved';
+        case 'TODO': return '📋 To Do';
+        default: return status;
+      }
+    }
+
+    async function advanceIssueStatus(id, currentStatus) {
+      let nextStatus = 'IN_PROGRESS';
+      if (currentStatus === 'TODO') nextStatus = 'IN_PROGRESS';
+      else if (currentStatus === 'IN_PROGRESS') nextStatus = 'IN_REVIEW';
+      else if (currentStatus === 'IN_REVIEW') nextStatus = 'DONE';
+      else if (currentStatus === 'DONE') nextStatus = 'TODO';
+
+      if (window.bugTrackerAPI) {
+        await window.bugTrackerAPI.updateIssueStatus(id, nextStatus);
+        const item = allIssues.find(i => i.id === id);
+        if (item) item.status = nextStatus;
+        renderIssues();
+      }
+    }
+
+    async function handleCreateIssue(e) {
+      e.preventDefault();
+      const title = document.getElementById('issueTitle').value.trim();
+      const severity = document.getElementById('issueSeverity').value;
+      const type = document.getElementById('issueType').value;
+      const component = document.getElementById('issueComponent').value.trim();
+      const description = document.getElementById('issueDesc').value.trim();
+
+      if (!title) return;
+
+      if (window.bugTrackerAPI) {
+        const res = await window.bugTrackerAPI.createIssue({
+          title, severity, type, component, description
+        });
+
+        if (res.success) {
+          allIssues.unshift(res.issue);
+          renderIssues();
+          document.getElementById('defectForm').reset();
+          document.getElementById('issueComponent').value = 'Frontend Core';
+        }
+      }
+    }
+
+    async function syncIssues() {
+      if (window.bugTrackerAPI) {
+        const res = await window.bugTrackerAPI.syncQueue();
+        if (res.issues) {
+          allIssues = res.issues;
+          renderIssues();
+        }
+      }
+    }
+
+    function setFilter(filter, el) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      renderIssues();
+    }
+
+    function filterIssues() {
+      renderIssues();
+    }
+
+    function toggleTheme() {
+      isDarkMode = !isDarkMode;
+      document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>

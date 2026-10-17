@@ -24,7 +24,10 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:load": "tsx scripts/generate-load-test-data.ts",
     "daily-enhance": "node scripts/daily-enhancer.js",
-    "daily-enhance:daemon": "node scripts/daily-enhancer.js --daemon"
+    "daily-enhance:daemon": "node scripts/daily-enhancer.js --daemon",
+    "desktop:build": "npm run --prefix desktop build",
+    "desktop:start": "npm run --prefix desktop start",
+    "desktop:dev": "npm run --prefix desktop dev"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
