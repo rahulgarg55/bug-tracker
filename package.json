@@ -27,7 +27,8 @@
     "daily-enhance:daemon": "node scripts/daily-enhancer.js --daemon",
     "desktop:build": "npm run --prefix desktop build",
     "desktop:start": "npm run --prefix desktop start",
-    "desktop:dev": "npm run --prefix desktop dev"
+    "desktop:dev": "npm run --prefix desktop dev",
+    "stripe:setup": "tsx scripts/setup-stripe-products.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
