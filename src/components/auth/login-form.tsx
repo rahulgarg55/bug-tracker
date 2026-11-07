@@ -13,6 +13,8 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 
 export function LoginForm() {
@@ -23,6 +25,7 @@ export function LoginForm() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [activeDemo, setActiveDemo] = useState<string | null>(null);
 
   const getCallbackUrl = () => {
     if (typeof window !== "undefined") {
@@ -31,6 +34,41 @@ export function LoginForm() {
       if (cb && cb.startsWith("/")) return cb;
     }
     return "/dashboard";
+  };
+
+  const handleQuickFill = async (
+    demoEmail: string,
+    demoRole: string,
+    autoSubmit = false,
+  ) => {
+    setEmail(demoEmail);
+    setPassword("BugTracker@2026!");
+    setActiveDemo(demoRole);
+    setError("");
+
+    if (autoSubmit) {
+      setIsLoading(true);
+      try {
+        const result = await signIn("credentials", {
+          email: demoEmail.toLowerCase().trim(),
+          password: "BugTracker@2026!",
+          redirect: false,
+        });
+
+        if (result?.error) {
+          setError("Invalid email or password. Please verify your credentials.");
+          setIsLoading(false);
+        } else {
+          router.push(getCallbackUrl());
+          router.refresh();
+        }
+      } catch {
+        setError(
+          "An unexpected authentication error occurred. Please try again.",
+        );
+        setIsLoading(false);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,6 +110,80 @@ export function LoginForm() {
 
   return (
     <div className="space-y-5">
+      {/* 1-Click Demo Accounts */}
+      <div className="bg-muted/40 border border-border/60 rounded-xl p-3 space-y-2">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span className="font-semibold flex items-center gap-1.5 text-foreground">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            1-Click Demo Testing Accounts
+          </span>
+          <span className="text-[11px] font-mono font-semibold text-primary">
+            pwd: BugTracker@2026!
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => handleQuickFill("alex@bugtracker.io", "architect")}
+            className={`text-left p-2 rounded-lg text-xs border transition-all hover:border-primary/50 cursor-pointer ${
+              activeDemo === "architect"
+                ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                : "border-border/60 bg-card hover:bg-muted/50"
+            }`}
+          >
+            <div className="font-medium text-foreground flex items-center justify-between">
+              <span>Alex (Lead)</span>
+              {activeDemo === "architect" && (
+                <CheckCircle2 className="h-3 w-3 text-primary" />
+              )}
+            </div>
+            <div className="text-[10px] text-muted-foreground truncate">
+              alex@bugtracker.io
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleQuickFill("admin@bugtracker.io", "admin")}
+            className={`text-left p-2 rounded-lg text-xs border transition-all hover:border-primary/50 cursor-pointer ${
+              activeDemo === "admin"
+                ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                : "border-border/60 bg-card hover:bg-muted/50"
+            }`}
+          >
+            <div className="font-medium text-foreground flex items-center justify-between">
+              <span>Admin / Owner</span>
+              {activeDemo === "admin" && (
+                <CheckCircle2 className="h-3 w-3 text-primary" />
+              )}
+            </div>
+            <div className="text-[10px] text-muted-foreground truncate">
+              admin@bugtracker.io
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleQuickFill("sarah.chen@bugtracker.io", "qa")}
+            className={`text-left p-2 rounded-lg text-xs border transition-all hover:border-primary/50 cursor-pointer ${
+              activeDemo === "qa"
+                ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                : "border-border/60 bg-card hover:bg-muted/50"
+            }`}
+          >
+            <div className="font-medium text-foreground flex items-center justify-between">
+              <span>QA Lead</span>
+              {activeDemo === "qa" && (
+                <CheckCircle2 className="h-3 w-3 text-primary" />
+              )}
+            </div>
+            <div className="text-[10px] text-muted-foreground truncate">
+              sarah.chen@bugtracker.io
+            </div>
+          </button>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Email Field */}
         <div className="space-y-1.5">
@@ -127,7 +239,7 @@ export function LoginForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
@@ -167,7 +279,7 @@ export function LoginForm() {
         {/* Submit Button */}
         <Button
           type="submit"
-          className="w-full h-10 font-semibold text-sm shadow-sm transition-all"
+          className="w-full h-10 font-semibold text-sm shadow-sm transition-all cursor-pointer"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -197,7 +309,7 @@ export function LoginForm() {
         <Button
           type="button"
           variant="outline"
-          className="h-9 text-xs font-medium border-border/80 hover:bg-muted/50"
+          className="h-9 text-xs font-medium border-border/80 hover:bg-muted/50 cursor-pointer"
           onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
         >
           <svg className="mr-2 h-3.5 w-3.5" viewBox="0 0 24 24">
@@ -224,7 +336,7 @@ export function LoginForm() {
         <Button
           type="button"
           variant="outline"
-          className="h-9 text-xs font-medium border-border/80 hover:bg-muted/50"
+          className="h-9 text-xs font-medium border-border/80 hover:bg-muted/50 cursor-pointer"
           onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
         >
           <svg className="mr-2 h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">

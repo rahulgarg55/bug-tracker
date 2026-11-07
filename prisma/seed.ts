@@ -48,6 +48,16 @@ async function main() {
   await prisma.user.deleteMany()
 
   // 1. Create Core Users
+  const adminOwner = await prisma.user.create({
+    data: {
+      name: "Admin / Owner",
+      email: "admin@bugtracker.io",
+      password: defaultPassword,
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      jobTitle: "Lead Architect & Workspace Owner",
+    },
+  })
+
   const alexLead = await prisma.user.create({
     data: {
       name: "Alex Vance",
@@ -108,6 +118,7 @@ async function main() {
   // 3. Organization Memberships (RBAC)
   await prisma.membership.createMany({
     data: [
+      { organizationId: cloudOrg.id, userId: adminOwner.id, role: "OWNER" },
       { organizationId: cloudOrg.id, userId: alexLead.id, role: "OWNER" },
       { organizationId: cloudOrg.id, userId: sarah.id, role: "ADMIN" },
       { organizationId: cloudOrg.id, userId: alex.id, role: "MEMBER" },

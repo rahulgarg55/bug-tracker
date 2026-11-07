@@ -241,7 +241,7 @@ export function IntegrationsView() {
               <div className="flex justify-between text-muted-foreground">
                 <span>Repository:</span>
                 <strong className="text-foreground">
-                  Priyamittal-dev/bug-tracker
+                  rahulgarg55/bug-tracker
                 </strong>
               </div>
               <div className="flex justify-between text-muted-foreground">

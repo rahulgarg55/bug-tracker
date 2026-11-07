@@ -26,7 +26,7 @@ Deploy instantly to Vercel's global edge network:
 ---
 
 ### Option 2: Deploy with Render (Full-Stack + Managed Database)
-- **[Deploy to Render (Priyamittal-dev/bug-tracker)](https://render.com/deploy?repo=https://github.com/Priyamittal-dev/bug-tracker)**
+- **[Deploy to Render (rahulgarg55/bug-tracker)](https://render.com/deploy?repo=https://github.com/rahulgarg55/bug-tracker)**
 Automatically provisions a managed database and builds the Next.js service via `render.yaml`.
 
 ---
