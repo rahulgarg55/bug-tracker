@@ -184,7 +184,20 @@ export default async function PricingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
+      <footer className="border-t border-border/60 py-8 text-center text-xs text-muted-foreground space-y-3">
+        <div className="flex justify-center items-center gap-4 text-foreground font-semibold">
+          <Link href="/vs/jira" className="hover:text-primary transition-colors">
+            Bug Tracker vs Jira
+          </Link>
+          <span>•</span>
+          <Link href="/vs/linear" className="hover:text-primary transition-colors">
+            Bug Tracker vs Linear
+          </Link>
+          <span>•</span>
+          <Link href="/docs" className="hover:text-primary transition-colors">
+            API Documentation
+          </Link>
+        </div>
         <p>© {new Date().getFullYear()} BugTracker Platform. Built for engineering teams.</p>
       </footer>
     </div>

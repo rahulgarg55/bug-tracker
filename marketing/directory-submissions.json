@@ -1,0 +1,87 @@
+{
+  "product": {
+    "name": "Bug Tracker",
+    "tagline": "Where engineering teams squash bugs 10x faster",
+    "short_description": "The lightning-fast, developer-first defect tracking and sprint intelligence SaaS built with Next.js 16 and Turbopack.",
+    "long_description": "Bug Tracker is a modern, high-performance engineering management and defect-tracking SaaS built with Next.js 16 (Turbopack, App Router), React 19, Auth.js (NextAuth v5), Prisma ORM, and Tailwind CSS. It combines the speed, keyboard-first navigation (⌘K), and minimalism of Linear with the technical defect-triage depth of Jira (reproducible defect schemas, stack trace tagging, environment badging, and automated SLA compliance timers). Features interactive OpenAPI 3.0.3 documentation with live Stoplight Elements explorer, real-time Agile sprint burndown charts, multi-tenant RBAC, and 1-click Docker Compose self-hosting.",
+    "website_url": "https://bug-tracker-ochre-tau.vercel.app",
+    "demo_url": "https://bug-tracker-ochre-tau.vercel.app/login",
+    "github_url": "https://github.com/rahulgarg55/bug-tracker",
+    "pricing_model": "Freemium / Open Core Self-Hosted",
+    "price_starting": "Free (Paid plans starting at $12/month for teams)",
+    "categories": [
+      "Developer Tools",
+      "Bug Tracking",
+      "Project Management",
+      "Agile & Scrum",
+      "Productivity Software",
+      "SaaS"
+    ],
+    "tags": [
+      "jira-alternative",
+      "linear-alternative",
+      "nextjs16",
+      "turbopack",
+      "bug-tracker",
+      "issue-tracking",
+      "self-hosted",
+      "docker",
+      "openapi",
+      "swagger"
+    ],
+    "platforms": ["Web", "macOS", "Windows", "Linux", "Self-Hosted Docker"]
+  },
+  "directories": [
+    {
+      "name": "AlternativeTo",
+      "submission_url": "https://alternativeto.net/software/create/",
+      "target_alternatives": ["Jira", "Linear", "Bugzilla", "Redmine", "Zoho BugTracker"],
+      "license": "Open Source / Freemium",
+      "suggested_tags": "jira-alternative, linear-alternative, bug-tracker, nextjs"
+    },
+    {
+      "name": "BetaList",
+      "submission_url": "https://betalist.com/submit",
+      "target_market": "Early adopters, developers, startup founders",
+      "status": "Ready for submission"
+    },
+    {
+      "name": "SaaSHub",
+      "submission_url": "https://www.saashub.com/submit",
+      "category": "Bug Tracking Software",
+      "status": "Ready for submission"
+    },
+    {
+      "name": "StartupStash",
+      "submission_url": "https://startupstash.com/submit-your-tools/",
+      "category": "Developer Tools",
+      "status": "Ready for submission"
+    },
+    {
+      "name": "Slant",
+      "submission_url": "https://www.slant.co/topics/new",
+      "recommended_questions": [
+        "What are the best lightweight alternatives to Jira for small dev teams?",
+        "What are the best self-hosted bug trackers with modern UI?"
+      ]
+    },
+    {
+      "name": "MicroLaunch",
+      "submission_url": "https://microlaunch.net/submit",
+      "category": "DevTools",
+      "status": "Ready for submission"
+    },
+    {
+      "name": "Toolify.ai",
+      "submission_url": "https://www.toolify.ai/submit",
+      "category": "Developer Productivity",
+      "status": "Ready for submission"
+    },
+    {
+      "name": "Devpost",
+      "submission_url": "https://devpost.com/software/new",
+      "category": "Software & Web Apps",
+      "status": "Ready for submission"
+    }
+  ]
+}
